@@ -55,3 +55,6 @@ vignettes/*.pdf
 *README.html
 *README_cache/
 #*README_files/
+
+# Ignore everything in the data folder
+data/
