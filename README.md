@@ -1,4 +1,4 @@
-# Quant_Gen_Manuscript-HS
+# Quantitative Genetics House Sparrow Project
 ## Heritability and GWAS analysis for House Sparrow
 - John McAuley
 - https://www.linkedin.com/in/john-mcauley-472286a5/
