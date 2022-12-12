@@ -17,7 +17,7 @@
 
 
 #_______________________________________________________
-# RepeatABEL installation:
+# 0. RepeatABEL installation:
 #_______________________________________________________
 
 install.packages("devtools")
@@ -69,6 +69,69 @@ install.packages(pkgs=pkgFile, type="source", repos=NULL)
 unlink(pkgFile)
 
 
+#_______________________________________________________
+# 1.  Setup 
+#_______________________________________________________
+# Requirements: Phenotype Data, Genetic data, and GRM
+# load rGLSadj.R as it contains functions we will use
+source("rGLSadj.R")
+
+# Load in a dataframe with Phenotypic data
+load("...")
+
+# Load in genotype data
+load("...")
+
+# gkin setup
+sparrow.gkin.sym <- sparrow.gkin
+sparrow.gkin.sym[upper.tri(sparrow.gkin.sym)] = t(sparrow.gkin.sym)[upper.tri(sparrow.gkin.sym)]
+sparrow.gkin.sym <- sparrow.gkin.sym * 2
+
+#Inspect genotype object
+qc0snp <- summary.snp.data(sparrowgen@gtdata)
+hist(qc0snp$CallRate, breaks = 50)
+qc0id <- perid.summary(sparrowgen)
+hist(qc0id$CallPP, breaks = 50) 
+
+#Choose Quality Control thresholds for check.marker() function based on histograms
+qc1 <- check.marker(sparrowgen, callrate = 0.9, perid.call = 0.8, p.level = 0)
+data1 <- sparrowgen[qc1$idok, qc1$snpok]
+rm(sparrowgen)
+rm(qc1)
 
 
+#_______________________________________________________
+# 2.  RepeatABEL 
+#_______________________________________________________
+system.time(gwasACC_prefit2 <- preFitModel(fixed = ACC ~ sex, 
+                                           id.name = "id",
+                                           genabel.data = data1,
+                                           phenotype.data = sparrow, 
+                                           corStruc = list(id = list("GRM")),
+                                           GRM = sparrow.gkin.sym))
+system.time(gwasACC2 <- rGLSadj(ACC ~ sex,
+                                genabel.data = data1,
+                                phenotype.data = sparrow, 
+                                id = "id",
+                                V = gwasACC_prefit2$V,
+                                GRM=sparrow.gkin.sym))
 
+# The process_rGLSadj_results function will do the lambda correction for
+# population structure and also return the expected distribution of P-values.
+
+gwasACCres2 <- process_rGLSadj_results(gwasACC2, data1)
+head(gwasACCres2)
+plot_rGLSadj_results(test) +
+  theme(axis.text = element_text(size = 24), 
+        axis.title = element_text(size = 24,face = "bold"), 
+        plot.title = element_text(size = 28),
+        #plot.margin = margin(20, 50, 20, 50),
+        legend.text=element_text(size=24),
+        legend.title=element_blank(),
+        axis.text.x = element_blank())+
+  ggtitle("Both Sexes")+
+  scale_colour_grey(start = 0, end = .45)
+
+
+save(gwasACCres2, file = "All-sparrow-GWAS-lambda-corrected.RData")
+save(gwasACCres2, file = "All-sparrow-GWAS.RData")
