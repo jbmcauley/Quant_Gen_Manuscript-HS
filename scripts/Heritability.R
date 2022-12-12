@@ -23,17 +23,23 @@ source("C:/Users/johnb/Dropbox/McAuley PhD - Data/Scripts/Model/makeGRM.R")
 #_________________________________________________________________________________________________________
 #  Import Data & Set up Variables
 #_________________________________________________________________________________________________________
+# Set up GRM
 grm.auto <- read.table("C:/Users/johnb/Dropbox/McAuley PhD - Data/Scripts/Model/workfiles.GRM.adj.grm.gz")  # CONTAINS REALIZED RELATEDNESS BETWEEN ALL GENOTYPED INDIVIDUALS
 ids.auto <- read.table("C:/Users/johnb/Dropbox/McAuley PhD - Data/Scripts/Model/workfiles.GRM.adj.grm.id")
+grminv <- makeGRM(grm.auto, ids.auto, id.vector = sparrow$id) # vector of IDs from the dataset that you use for the asreml model
+# You MUST specify this this is an inverted matrix!
+attr(grminv, which = "INVERSE") <- TRUE
+rm(grm.auto)
+rm(ids.auto)
 
 # Read in pedigree &  ID-Recode-Key
-idkey <- read.table("C:/Users/johnb/Dropbox/McAuley PhD - Data/Scripts/Model/ID-Recode-Key.txt", header = T, stringsAsFactors = F)[,c(2, 4)]
-names(idkey) <- c("ringnr", "id")
-ped <- read.table("C:/Users/johnb/Dropbox/McAuley PhD - Data/Scripts/Model/SNP_pedigree_Helgeland_05122017.txt", header = TRUE, stringsAsFactors = F)
-names(ped)[1] <- "ringnr"
-ped <- left_join(ped, idkey)
-idkey$id <- as.character(idkey$id)
-ped$id <- as.character(ped$id)
+# idkey <- read.table("C:/Users/johnb/Dropbox/McAuley PhD - Data/Scripts/Model/ID-Recode-Key.txt", header = T, stringsAsFactors = F)[,c(2, 4)]
+# names(idkey) <- c("ringnr", "id")
+# ped <- read.table("C:/Users/johnb/Dropbox/McAuley PhD - Data/Scripts/Model/SNP_pedigree_Helgeland_05122017.txt", header = TRUE, stringsAsFactors = F)
+# names(ped)[1] <- "ringnr"
+# ped <- left_join(ped, idkey)
+# idkey$id <- as.character(idkey$id)
+# ped$id <- as.character(ped$id)
 
 #~~ Morph & Brood data
 Morph <- read.csv("C:/Users/johnb/Dropbox/McAuley PhD - Data/Scripts/Model/AdultMorphology-pre4_SJ.csv", stringsAsFactors = F)
@@ -64,9 +70,62 @@ sparrow$par_age <- sparrow$off_hatchyear - sparrow$par_hatchyear # Only 60% of d
 #  Set character variables to factors
 sparrow[sapply(sparrow, is.character)] <- lapply(sparrow[sapply(sparrow, is.character)], as.factor)
 
-
+sparrow.sub<- sparrow[,c(2, 25,35)]
 
 #_________________________________________________________________________________________________________
 #  Run ANIMAL MODELS
 #_________________________________________________________________________________________________________
 
+#Most basic Models
+sparrow.sub <- sparrow %>% dplyr::select(parent, yapp_CO_count_QCed, SexF)
+model.basic <- asreml(fixed = yapp_CO_count_QCed ~ 1 + SexF,
+                      random = ~ vm(parent, grminv) + ide(parent),
+                      residual= ~ idv(units),
+                      na.action = na.method(x = "omit", y = "omit"),
+                      data = sparrow.sub, workspace = "8gb")
+
+sparrow.sub <- sparrow %>% dplyr::select(parent, yapp_CO_count_QCed, SexF) %>% filter(SexF == "Female")
+model.basic.female <- asreml(fixed = yapp_CO_count_QCed ~ 1,
+                      random = ~ vm(parent, grminv) + ide(parent),
+                      residual= ~ idv(units),
+                      na.action = na.method(x = "omit", y = "omit"),
+                      data = sparrow.sub, workspace = "8gb")
+
+sparrow.sub <- sparrow %>% dplyr::select(parent, yapp_CO_count_QCed, SexF) %>% filter(SexF == "Male")
+model.basic.male <- asreml(fixed = yapp_CO_count_QCed ~ 1,
+                             random = ~ vm(parent, grminv) + ide(parent),
+                             residual= ~ idv(units),
+                             na.action = na.method(x = "omit", y = "omit"),
+                             data = sparrow.sub, workspace = "8gb")
+
+# Variances: 
+asreml4pin(model.basic)
+asreml4pin(model.basic.male)
+asreml4pin(model.basic.female)
+
+# Expansion of Basic Structure with Total_coverage as fixed effect
+sparrow.sub <- sparrow %>% dplyr::select(parent, yapp_CO_count_QCed, SexF, Total_coverage, Total_Coverage2)
+model.basic <- asreml(fixed = yapp_CO_count_QCed ~ 1 + SexF,
+                      random = ~ vm(parent, grminv) + ide(parent),
+                      residual= ~ idv(units),
+                      na.action = na.method(x = "omit", y = "omit"),
+                      data = sparrow.sub, workspace = "8gb")
+
+sparrow.sub <- sparrow %>% dplyr::select(parent, yapp_CO_count_QCed, SexF, Total_coverage, Total_Coverage2) %>% filter(SexF == "Male")
+model.basic.M <- asreml(fixed = yapp_CO_count_QCed ~ 1 + SexF,
+                      random = ~ vm(parent, grminv) + ide(parent),
+                      residual= ~ idv(units),
+                      na.action = na.method(x = "omit", y = "omit"),
+                      data = sparrow.sub, workspace = "8gb")
+
+sparrow.sub <- sparrow %>% dplyr::select(parent, yapp_CO_count_QCed, SexF, Total_coverage, Total_Coverage2) %>% filter(SexF == "Female")
+model.basic.F <- asreml(fixed = yapp_CO_count_QCed ~ 1 + SexF,
+                      random = ~ vm(parent, grminv) + ide(parent),
+                      residual= ~ idv(units),
+                      na.action = na.method(x = "omit", y = "omit"),
+                      data = sparrow.sub, workspace = "8gb")
+
+# Variances: 
+asreml4pin(model.basic)
+asreml4pin(model.basic.M)
+asreml4pin(model.basic.F)
