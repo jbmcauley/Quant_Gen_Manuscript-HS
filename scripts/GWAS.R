@@ -37,17 +37,23 @@ library(RepeatABEL)
 
 # GenABEL.data
 # Download packages from CRAN archive
-install.packages(c("GenABEL.data_1.0.0.tar.gz", "GenABEL_1.8-0.tar.gz"), repos = NULL)
+install.packages("GenABEL.data_1.0.0.tar.gz", repos = NULL)
+install.packages("GenABEL_1.8-0.tar.gz", repos = NULL)
 
 install.packages("hglm")
 #Download repeatable from archive
 install.packages("RepeatABEL_1.1.tar.gz", repos = NULL)
+
+install.packages("dplyr_0.8.0.1.tar.gz", repos = NULL)
 #_______________________________________________________
 # 1.  Setup 
 #_______________________________________________________
 # Requirements: Phenotype Data, Genetic data, and GRM
-# load rGLSadj.R as it contains functions we will use
+# load rGLSadj.R as it contains functions we will use to extract results
 source("C:/Users/johnb/Projects/PhD_Repo/data/YAPP/rGLSadj.R")
+library(GenABEL)
+library(GenABEL.data)
+library(RepeatABEL)
 library(dplyr)
 
 # Load in a dataframe with Phenotypic data
@@ -56,7 +62,7 @@ sparrow <- read.table("data/yapp_data_QCed/5_Full_Recombination_Phenotypes.txt",
 # Here I load in an idkey b/c my grm has different ids than my phenotype txt file.
 idkey <- read.table("C:/Users/johnb/Dropbox/McAuley PhD - Data/Scripts/Model/ID-Recode-Key.txt", header = T, stringsAsFactors = F)[,c(2, 4)]
 idkey[,2] <- as.character(idkey[,2])
-names(idkey) <- c("parent", "FID")
+names(idkey) <- c("parent", "id")
 sparrow$parent <- as.character(sparrow$parent)
 sparrow <- left_join(sparrow, idkey)
 
@@ -83,24 +89,26 @@ qc1 <- check.marker(sparrowgen, callrate = 0.9, perid.call = 0.8, p.level = 0)
 data1 <- sparrowgen[qc1$idok, qc1$snpok]
 rm(sparrowgen)
 rm(qc1)
-
+rm(qc0id)
+rm(qc0snp)
 
 #_______________________________________________________
 # 2.  RepeatABEL 
 #_______________________________________________________
 
 # Basic Model
-system.time(gwasACC_prefit2 <- preFitModel(fixed = yapp_CO_count_QCed ~ Sex + Total_Coverage + Total_Coverage2, 
-                                           id.name = "FID",
-                                           genabel.data = data1,
-                                           phenotype.data = sparrow, 
-                                           corStruc = list(id = list("GRM")),
-                                           GRM = sparrow.gkin.sym))
+gwasACC_prefit2 <- preFitModel(fixed = yapp_CO_count_QCed ~ SexF + Total_Coverage + Total_Coverage2, 
+                               random = ~1|id,
+                               id.name = "id", #YOUR ID MUST BE NAMED "id" otherwise library breaks
+                               genabel.data = data1,
+                               phenotype.data = sparrow, 
+                               corStruc = list(id = list("GRM")),
+                               GRM = sparrow.gkin.sym)
 
 system.time(gwasACC2 <- rGLSadj(yapp_CO_count_QCed ~ SexF + Total_Coverage + Total_Coverage2,
                                 genabel.data = data1,
                                 phenotype.data = sparrow, 
-                                id = "FID",
+                                id = "id",
                                 V = gwasACC_prefit2$V,
                                 GRM=sparrow.gkin.sym))
 
@@ -109,9 +117,9 @@ system.time(gwasACC2 <- rGLSadj(yapp_CO_count_QCed ~ SexF + Total_Coverage + Tot
 
 gwasACCres2 <- process_rGLSadj_results(gwasACC2, data1)
 head(gwasACCres2)
-plot_rGLSadj_results(test) +
-  theme(axis.text = element_text(size = 24), 
-        axis.title = element_text(size = 24,face = "bold"), 
+plot_rGLSadj_results(gwasACCres2) +
+  theme(axis.text = element_text(size = 24),
+        axis.title = element_text(size = 24,face = "bold"),
         plot.title = element_text(size = 28),
         #plot.margin = margin(20, 50, 20, 50),
         legend.text=element_text(size=24),
@@ -129,17 +137,19 @@ save(gwasACC2, file = "results/GWAS/CO_count_QCed/All-sparrow-GWAS.RData")
 
 
 # Female Only - Basic Model
-system.time(gwasACC_prefit2 <- preFitModel(fixed = yapp_CO_count_QCed ~ SexF + Total_Coverage + Total_Coverage2, 
-                                           id.name = "FID",
+sparrow.f <- sparrow %>% filter(SexF == "Female")
+
+system.time(gwasACC_prefit2 <- preFitModel(fixed = yapp_CO_count_QCed ~ 1 + Total_Coverage + Total_Coverage2, 
+                                           id.name = "id",
                                            genabel.data = data1,
-                                           phenotype.data = sparrow %>% filter(SexF == "Female"), 
+                                           phenotype.data = sparrow.f, 
                                            corStruc = list(id = list("GRM")),
                                            GRM = sparrow.gkin.sym))
 
-system.time(gwasACC2 <- rGLSadj(yapp_CO_count_QCed ~ SexF + Total_Coverage + Total_Coverage2,
+system.time(gwasACC2 <- rGLSadj(yapp_CO_count_QCed ~ 1 + Total_Coverage + Total_Coverage2,
                                 genabel.data = data1,
-                                phenotype.data = sparrow %>% filter(SexF == "Female"), 
-                                id = "FID",
+                                phenotype.data = sparrow.f, 
+                                id = "id",
                                 V = gwasACC_prefit2$V,
                                 GRM=sparrow.gkin.sym))
 
@@ -148,7 +158,7 @@ system.time(gwasACC2 <- rGLSadj(yapp_CO_count_QCed ~ SexF + Total_Coverage + Tot
 
 gwasACCres2 <- process_rGLSadj_results(gwasACC2, data1)
 head(gwasACCres2)
-plot_rGLSadj_results(test) +
+plot_rGLSadj_results(gwasACCres2) +
   theme(axis.text = element_text(size = 24), 
         axis.title = element_text(size = 24,face = "bold"), 
         plot.title = element_text(size = 28),
@@ -156,9 +166,48 @@ plot_rGLSadj_results(test) +
         legend.text=element_text(size=24),
         legend.title=element_blank(),
         axis.text.x = element_blank())+
-  ggtitle("Both Sexes")+
+  ggtitle("Females")+
   scale_colour_grey(start = 0, end = .45)
 
 
-save(gwasACCres2, file = "results/GWAS/CO_count_QCed/All-sparrow-GWAS-lambda-corrected.RData")
-save(gwasACC2, file = "results/GWAS/CO_count_QCed/All-sparrow-GWAS.RData")
+save(gwasACCres2, file = "results/GWAS/CO_count_QCed/Female-GWAS-lambda-corrected.RData")
+save(gwasACC2, file = "results/GWAS/CO_count_QCed/Female-GWAS.RData")
+
+
+
+# Female Only - Basic Model
+sparrow.m <- sparrow %>% filter(SexF == "Male")
+
+system.time(gwasACC_prefit2 <- preFitModel(fixed = yapp_CO_count_QCed ~ 1 + Total_Coverage + Total_Coverage2, 
+                                           id.name = "id",
+                                           genabel.data = data1,
+                                           phenotype.data = sparrow.m, 
+                                           corStruc = list(id = list("GRM")),
+                                           GRM = sparrow.gkin.sym))
+
+system.time(gwasACC2 <- rGLSadj(yapp_CO_count_QCed ~ 1 + Total_Coverage + Total_Coverage2,
+                                genabel.data = data1,
+                                phenotype.data = sparrow.m, 
+                                id = "id",
+                                V = gwasACC_prefit2$V,
+                                GRM=sparrow.gkin.sym))
+
+# The process_rGLSadj_results function will do the lambda correction for
+# population structure and also return the expected distribution of P-values.
+
+gwasACCres2 <- process_rGLSadj_results(gwasACC2, data1)
+head(gwasACCres2)
+plot_rGLSadj_results(gwasACCres2) +
+  theme(axis.text = element_text(size = 24), 
+        axis.title = element_text(size = 24,face = "bold"), 
+        plot.title = element_text(size = 28),
+        #plot.margin = margin(20, 50, 20, 50),
+        legend.text=element_text(size=24),
+        legend.title=element_blank(),
+        axis.text.x = element_blank())+
+  ggtitle("Males")+
+  scale_colour_grey(start = 0, end = .45)
+
+
+save(gwasACCres2, file = "results/GWAS/CO_count_QCed/Male-GWAS-lambda-corrected.RData")
+save(gwasACC2, file = "results/GWAS/CO_count_QCed/Male-GWAS.RData")
