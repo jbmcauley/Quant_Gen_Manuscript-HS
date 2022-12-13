@@ -36,56 +36,41 @@ library(RepeatABEL)
 # cran archive as follows:
 
 # GenABEL.data
-# Download package from CRAN archive
-url <- "https://cran.r-project.org/src/contrib/Archive/GenABEL.data/GenABEL.data_1.0.0.tar.gz"
-pkgFile <- "GenABEL.data_1.0.0.tar.gz"
-download.file(url = url, destfile = pkgFile)
+# Download packages from CRAN archive
+install.packages(c("GenABEL.data_1.0.0.tar.gz", "GenABEL_1.8-0.tar.gz"), repos = NULL)
 
-# Install dependencies list in the DESCRIPTION file
-# NA
-
-# install package
-install.packages(pkgs=pkgFile, type="source", repos=NULL)
-
-# Delete package
-unlink(pkgFile)
-
-# GenABEL
-# Download package from CRAN archive
-url <- "https://cran.r-project.org/src/contrib/Archive/GenABEL/GenABEL_1.8-0.tar.gz"
-pkgFile <- "GenABEL_1.8-0.tar.gz"
-download.file(url = url, destfile = pkgFile)
-
-#Look in the DESCRIPTION file to view dependencies needed.
-
-# Install dependencies list in the DESCRIPTION file
-install.packages(c("methods", "MASS", "utils"))
-install.packages("qvalue", "DatABEL" , "hglm",
-"MetABEL", "PredictABEL", "VariABEL", "bigRR")
-# install package
-install.packages(pkgs=pkgFile, type="source", repos=NULL)
-
-# Delete package
-unlink(pkgFile)
-
-
+install.packages("hglm")
+#Download repeatable from archive
+install.packages("RepeatABEL_1.1.tar.gz", repos = NULL)
 #_______________________________________________________
 # 1.  Setup 
 #_______________________________________________________
 # Requirements: Phenotype Data, Genetic data, and GRM
 # load rGLSadj.R as it contains functions we will use
-source("rGLSadj.R")
+source("C:/Users/johnb/Projects/PhD_Repo/data/YAPP/rGLSadj.R")
+library(dplyr)
 
 # Load in a dataframe with Phenotypic data
-load("...")
+sparrow <- read.table("data/yapp_data_QCed/5_Full_Recombination_Phenotypes.txt", header = TRUE)
+
+# Here I load in an idkey b/c my grm has different ids than my phenotype txt file.
+idkey <- read.table("C:/Users/johnb/Dropbox/McAuley PhD - Data/Scripts/Model/ID-Recode-Key.txt", header = T, stringsAsFactors = F)[,c(2, 4)]
+idkey[,2] <- as.character(idkey[,2])
+names(idkey) <- c("parent", "FID")
+sparrow$parent <- as.character(sparrow$parent)
+sparrow <- left_join(sparrow, idkey)
 
 # Load in genotype data
-load("...")
+load("C:/Users/johnb/Projects/PhD_Repo/data/YAPP/sparrowgen.RData")
+
+# Load GRM
+load("C:/Users/johnb/Projects/PhD_Repo/data/YAPP/sparrow.gkin.RData")
 
 # gkin setup
 sparrow.gkin.sym <- sparrow.gkin
 sparrow.gkin.sym[upper.tri(sparrow.gkin.sym)] = t(sparrow.gkin.sym)[upper.tri(sparrow.gkin.sym)]
 sparrow.gkin.sym <- sparrow.gkin.sym * 2
+rm(sparrow.gkin)
 
 #Inspect genotype object
 qc0snp <- summary.snp.data(sparrowgen@gtdata)
@@ -103,16 +88,19 @@ rm(qc1)
 #_______________________________________________________
 # 2.  RepeatABEL 
 #_______________________________________________________
-system.time(gwasACC_prefit2 <- preFitModel(fixed = ACC ~ sex, 
-                                           id.name = "id",
+
+# Basic Model
+system.time(gwasACC_prefit2 <- preFitModel(fixed = yapp_CO_count_QCed ~ Sex + Total_Coverage + Total_Coverage2, 
+                                           id.name = "FID",
                                            genabel.data = data1,
                                            phenotype.data = sparrow, 
                                            corStruc = list(id = list("GRM")),
                                            GRM = sparrow.gkin.sym))
-system.time(gwasACC2 <- rGLSadj(ACC ~ sex,
+
+system.time(gwasACC2 <- rGLSadj(yapp_CO_count_QCed ~ SexF + Total_Coverage + Total_Coverage2,
                                 genabel.data = data1,
                                 phenotype.data = sparrow, 
-                                id = "id",
+                                id = "FID",
                                 V = gwasACC_prefit2$V,
                                 GRM=sparrow.gkin.sym))
 
@@ -133,5 +121,44 @@ plot_rGLSadj_results(test) +
   scale_colour_grey(start = 0, end = .45)
 
 
-save(gwasACCres2, file = "All-sparrow-GWAS-lambda-corrected.RData")
-save(gwasACCres2, file = "All-sparrow-GWAS.RData")
+save(gwasACCres2, file = "results/GWAS/CO_count_QCed/All-sparrow-GWAS-lambda-corrected.RData")
+save(gwasACC2, file = "results/GWAS/CO_count_QCed/All-sparrow-GWAS.RData")
+
+
+
+
+
+# Female Only - Basic Model
+system.time(gwasACC_prefit2 <- preFitModel(fixed = yapp_CO_count_QCed ~ SexF + Total_Coverage + Total_Coverage2, 
+                                           id.name = "FID",
+                                           genabel.data = data1,
+                                           phenotype.data = sparrow %>% filter(SexF == "Female"), 
+                                           corStruc = list(id = list("GRM")),
+                                           GRM = sparrow.gkin.sym))
+
+system.time(gwasACC2 <- rGLSadj(yapp_CO_count_QCed ~ SexF + Total_Coverage + Total_Coverage2,
+                                genabel.data = data1,
+                                phenotype.data = sparrow %>% filter(SexF == "Female"), 
+                                id = "FID",
+                                V = gwasACC_prefit2$V,
+                                GRM=sparrow.gkin.sym))
+
+# The process_rGLSadj_results function will do the lambda correction for
+# population structure and also return the expected distribution of P-values.
+
+gwasACCres2 <- process_rGLSadj_results(gwasACC2, data1)
+head(gwasACCres2)
+plot_rGLSadj_results(test) +
+  theme(axis.text = element_text(size = 24), 
+        axis.title = element_text(size = 24,face = "bold"), 
+        plot.title = element_text(size = 28),
+        #plot.margin = margin(20, 50, 20, 50),
+        legend.text=element_text(size=24),
+        legend.title=element_blank(),
+        axis.text.x = element_blank())+
+  ggtitle("Both Sexes")+
+  scale_colour_grey(start = 0, end = .45)
+
+
+save(gwasACCres2, file = "results/GWAS/CO_count_QCed/All-sparrow-GWAS-lambda-corrected.RData")
+save(gwasACC2, file = "results/GWAS/CO_count_QCed/All-sparrow-GWAS.RData")
