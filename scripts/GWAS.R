@@ -1,7 +1,7 @@
 ## GWAS analysis for YAPP QC'd Dataset
 ## By John McAuley
 ## Dec 12th 2022
-## R version 3.4.4
+## R version 3.5.3
 
 # Since we have repeated measures we are going to use the R package RepeatABEL.
 # RepeatABEL also allows for us to account for any underlying population structure
@@ -87,6 +87,7 @@ hist(qc0id$CallPP, breaks = 50)
 #Choose Quality Control thresholds for check.marker() function based on histograms
 qc1 <- check.marker(sparrowgen, callrate = 0.9, perid.call = 0.8, p.level = 0)
 data1 <- sparrowgen[qc1$idok, qc1$snpok]
+# save(data1, file = "data/data1.RData")
 rm(sparrowgen)
 rm(qc1)
 rm(qc0id)
