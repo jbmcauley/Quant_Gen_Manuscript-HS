@@ -66,6 +66,10 @@ names(idkey) <- c("parent", "id")
 sparrow$parent <- as.character(sparrow$parent)
 sparrow <- left_join(sparrow, idkey)
 
+names(idkey) <- c("Mother", "Dam")
+sparrow <- left_join(sparrow, idkey)
+
+
 # Load in genotype data
 load("C:/Users/johnb/Projects/PhD_Repo/data/YAPP/sparrowgen.RData")
 
@@ -102,11 +106,11 @@ gwasACC_prefit2 <- preFitModel(fixed = yapp_CO_count_QCed ~ SexF + Total_Coverag
                                random = ~1|id,
                                id.name = "id", #YOUR ID MUST BE NAMED "id" otherwise library breaks
                                genabel.data = data1,
-                               phenotype.data = sparrow, 
+                               phenotype.data = spar, 
                                corStruc = list(id = list("GRM")),
                                GRM = sparrow.gkin.sym)
 
-system.time(gwasACC2 <- rGLSadj(yapp_CO_count_QCed ~ SexF + Total_Coverage + Total_Coverage2,
+system.time(gwasACC2 <- rGLSadj(fixed = yapp_CO_count_QCed ~ SexF + Total_Coverage + Total_Coverage2,
                                 genabel.data = data1,
                                 phenotype.data = sparrow, 
                                 id = "id",

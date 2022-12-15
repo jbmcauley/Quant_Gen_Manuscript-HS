@@ -35,7 +35,7 @@ rm(sparrow.gkin)
 
 
 # All sparrows
-gwasACC_prefit2 <- preFitModel(fixed = yapp_CO_count_macro ~ SexF + Total_Coverage + Total_Coverage2, 
+gwasACC_prefit2 <- preFitModel(fixed = intra_shuff ~ SexF + Total_Coverage + Total_Coverage2, 
                                random = ~1|id,
                                id.name = "id", #YOUR ID MUST BE NAMED "id" otherwise library breaks
                                genabel.data = data1,
@@ -43,24 +43,24 @@ gwasACC_prefit2 <- preFitModel(fixed = yapp_CO_count_macro ~ SexF + Total_Covera
                                corStruc = list(id = list("GRM")),
                                GRM = sparrow.gkin.sym)
 
-gwasACC2 <- rGLSadj(yapp_CO_count_macro ~ SexF + Total_Coverage + Total_Coverage2,
-                                genabel.data = data1,
-                                phenotype.data = sparrow, 
-                                id = "id",
-                                V = gwasACC_prefit2$V,
-                                GRM=sparrow.gkin.sym)
+gwasACC2 <- rGLSadj(intra_shuff ~ SexF + Total_Coverage + Total_Coverage2,
+                    genabel.data = data1,
+                    phenotype.data = sparrow, 
+                    id = "id",
+                    V = gwasACC_prefit2$V,
+                    GRM=sparrow.gkin.sym)
 
 gwasACCres2 <- process_rGLSadj_results(gwasACC2, data1)
 
-save(gwasACCres2, file = paste0(resultpath, "AS_Macro-basic_GWAS-lambda-corrected.RData"))
-save(gwasACC2, file = paste0(resultpath, "AS_Macro-basic_GWAS.RData"))
+save(gwasACCres2, file = paste0(resultpath, "AS_IS-basic_GWAS-lambda-corrected.RData"))
+save(gwasACC2, file = paste0(resultpath, "AS_IS-basic_GWAS.RData"))
 
 rm(gwasACC_prefit2)
 rm(gwasACC2)
 rm(gwasACCres2)
 
 # Female
-gwasACC_prefit2 <- preFitModel(fixed = yapp_CO_count_macro ~ 1 + Total_Coverage + Total_Coverage2, 
+gwasACC_prefit2 <- preFitModel(fixed = intra_shuff ~ 1 + Total_Coverage + Total_Coverage2, 
                                random = ~1|id,
                                id.name = "id", #YOUR ID MUST BE NAMED "id" otherwise library breaks
                                genabel.data = data1,
@@ -68,21 +68,21 @@ gwasACC_prefit2 <- preFitModel(fixed = yapp_CO_count_macro ~ 1 + Total_Coverage 
                                corStruc = list(id = list("GRM")),
                                GRM = sparrow.gkin.sym)
 
-gwasACC2 <- rGLSadj(yapp_CO_count_macro ~ 1 + Total_Coverage + Total_Coverage2,
-                                genabel.data = data1,
-                                phenotype.data = sparrow.f, 
-                                id = "id",
-                                V = gwasACC_prefit2$V,
-                                GRM=sparrow.gkin.sym)
+gwasACC2 <- rGLSadj(intra_shuff ~ 1 + Total_Coverage + Total_Coverage2,
+                    genabel.data = data1,
+                    phenotype.data = sparrow.f, 
+                    id = "id",
+                    V = gwasACC_prefit2$V,
+                    GRM=sparrow.gkin.sym)
 
 gwasACCres2 <- process_rGLSadj_results(gwasACC2, data1)
 
-save(gwasACCres2, file = paste0(resultpath, "F_Macro-basic_GWAS-lambda-corrected.RData"))
-save(gwasACC2, file = paste0(resultpath, "F_Macro-basic_GWAS.RData"))
+save(gwasACCres2, file = paste0(resultpath, "F_IS-basic_GWAS-lambda-corrected.RData"))
+save(gwasACC2, file = paste0(resultpath, "F_IS-basic_GWAS.RData"))
 
 
 # Male
-gwasACC_prefit2 <- preFitModel(fixed = yapp_CO_count_macro ~ 1 + Total_Coverage + Total_Coverage2, 
+gwasACC_prefit2 <- preFitModel(fixed = intra_shuff ~ 1 + Total_Coverage + Total_Coverage2, 
                                random = ~1|id,
                                id.name = "id", #YOUR ID MUST BE NAMED "id" otherwise library breaks
                                genabel.data = data1,
@@ -90,14 +90,14 @@ gwasACC_prefit2 <- preFitModel(fixed = yapp_CO_count_macro ~ 1 + Total_Coverage 
                                corStruc = list(id = list("GRM")),
                                GRM = sparrow.gkin.sym)
 
-gwasACC2 <- rGLSadj(yapp_CO_count_macro ~ 1 + Total_Coverage + Total_Coverage2,
-                                genabel.data = data1,
-                                phenotype.data = sparrow.m, 
-                                id = "id",
-                                V = gwasACC_prefit2$V,
-                                GRM=sparrow.gkin.sym)
+gwasACC2 <- rGLSadj(intra_shuff ~ 1 + Total_Coverage + Total_Coverage2,
+                    genabel.data = data1,
+                    phenotype.data = sparrow.m, 
+                    id = "id",
+                    V = gwasACC_prefit2$V,
+                    GRM=sparrow.gkin.sym)
 
 gwasACCres2 <- process_rGLSadj_results(gwasACC2, data1)
 
-save(gwasACCres2, file = paste0(resultpath, "M_Macro-basic_GWAS-lambda-corrected.RData"))
-save(gwasACC2, file = paste0(resultpath, "M_Macro-basic_GWAS.RData"))
+save(gwasACCres2, file = paste0(resultpath, "M_IS-basic_GWAS-lambda-corrected.RData"))
+save(gwasACC2, file = paste0(resultpath, "M_IS-basic_GWAS.RData"))
