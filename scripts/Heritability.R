@@ -244,3 +244,26 @@ run_model  <- function(var.response, var.fixed, var.random, dataset){
 
 
 
+sparrow$MaleACC  <- sparrow$yapp_CO_count_QCed
+sparrow$FemaleACC <- sparrow$yapp_CO_count_QCed
+
+# Then remove the values you don't want. One solution is to index by the
+# differentiating factor (in this case sex) and change the unwanted values to
+# NAs. For example:
+
+sparrow$MaleACC[which(sparrow$SexF == "Female")] <- NA   # if sex == 0 (female) then make NA
+sparrow$FemaleACC[which(sparrow$SexF == "Male")] <- NA   # if sex == 1 ( male ) then make NA
+
+#~~ We then have to use the corgh and idh structure...
+
+biv.model <- asreml(fixed  = cbind(MaleACC,FemaleACC) ~ trait:Total_Coverage + trait:Total_Coverage2,   # remove sex!
+                 random = ~ corgh(trait):vm(parent, grminv) + idh(trait):ide(parent),
+                 residual   = ~ units:us(trait, init = NA),
+                 data = sparrow, 
+                 maxit = 20,
+                 workspace = "8gb")
+
+summary(biv.model)
+model5$vparameters
+
+vpredict(biv.model, ra~V1)
