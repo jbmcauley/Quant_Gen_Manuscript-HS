@@ -52,7 +52,7 @@ names(basedata) <- c("offspring", "off_hatchisland", "off_hatchyear")
 sparrow <- left_join(sparrow, basedata, by = "offspring")
 names(brood) <- c("offspring", "off_brood_id")
 sparrow <- left_join(sparrow, brood, by = "offspring")
-sparrow$par_age <- sparrow$off_hatchyear - sparrow$par_hatchyear # Only 60% of data has an 'Age' yikes...
+sparrow$par_age <- sparrow$off_hatchyear - sparrow$par_hatchyear # Only 60% of data has an 'Age'
 
 #Make your GRM
 grminv <- makeGRM(grm.auto, ids.auto, id.vector = sparrow$id) # vector of IDs from the dataset that you use for the asreml model
@@ -267,3 +267,254 @@ summary(biv.model)
 model5$vparameters
 
 vpredict(biv.model, ra~V1)
+
+
+
+#____________________________________________________________________________________________
+#Intra & Intra-gene
+#____________________________________________________________________________________________
+#Intra Shuff Gene
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff_gene, SexF, Total_Coverage, Total_Coverage2)
+model.basic <- asreml(fixed = intra_shuff_gene ~ 1 + SexF + Total_Coverage + Total_Coverage2,
+                      random = ~ vm(parent, grminv) + ide(parent),
+                      residual= ~ idv(units),
+                      na.action = na.method(x = "omit", y = "omit"),
+                      data = sparrow.sub, workspace = "8gb")
+
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff_gene, SexF, Total_Coverage, Total_Coverage2) %>% filter(SexF == "Male")
+model.basic.M <- asreml(fixed = intra_shuff_gene ~ 1 + Total_Coverage + Total_Coverage2,
+                        random = ~ vm(parent, grminv) + ide(parent),
+                        residual= ~ idv(units),
+                        na.action = na.method(x = "omit", y = "omit"),
+                        data = sparrow.sub, workspace = "8gb")
+
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff_gene, SexF, Total_Coverage, Total_Coverage2) %>% filter(SexF == "Female")
+model.basic.F <- asreml(fixed = intra_shuff_gene ~ 1 + Total_Coverage + Total_Coverage2,
+                        random = ~ vm(parent, grminv) + ide(parent),
+                        residual= ~ idv(units),
+                        na.action = na.method(x = "omit", y = "omit"),
+                        data = sparrow.sub, workspace = "8gb")
+
+
+
+
+# Expansion of previous structure with: Maternal Random Effects
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff_gene, SexF, Total_Coverage, Total_Coverage2, Mother)
+model.basic.Mat <- asreml(fixed = intra_shuff_gene ~ 1 + SexF + Total_Coverage + Total_Coverage2,
+                          random = ~ vm(parent, grminv) + ide(parent) + vm(Mother, grminv) + ide(Mother),
+                          residual= ~ idv(units),
+                          na.action = na.method(x = "omit", y = "omit"),
+                          data = sparrow.sub, workspace = "8gb")
+
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff_gene, SexF, Total_Coverage, Total_Coverage2, Mother) %>% filter(SexF == "Female")
+model.basic.F.Mat <- asreml(fixed = intra_shuff_gene ~ 1 + Total_Coverage + Total_Coverage2,
+                            random = ~ vm(parent, grminv) + ide(parent) + vm(Mother, grminv) + ide(Mother),
+                            residual= ~ idv(units),
+                            na.action = na.method(x = "omit", y = "omit"),
+                            data = sparrow.sub, workspace = "8gb")
+
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff_gene, SexF, Total_Coverage, Total_Coverage2, Mother) %>% filter(SexF == "Male")
+model.basic.M.Mat <- asreml(fixed = intra_shuff_gene ~ 1 + Total_Coverage + Total_Coverage2,
+                            random = ~ vm(parent, grminv) + ide(parent) + vm(Mother, grminv) + ide(Mother),
+                            residual= ~ idv(units),
+                            na.action = na.method(x = "omit", y = "omit"),
+                            data = sparrow.sub, workspace = "8gb")
+
+
+
+# Expansion of previous structure with: Maternal Random Effects
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff_gene, SexF, Total_Coverage, Total_Coverage2, Mother, par_age, off_hatchisland, par_hatchisland)
+model.basic.all <- asreml(fixed = intra_shuff_gene ~ 1 + SexF + Total_Coverage + Total_Coverage2 +par_age,
+                          random = ~ vm(parent, grminv) + ide(parent) + vm(Mother, grminv) + ide(Mother)+ par_hatchisland + off_hatchisland,
+                          residual= ~ idv(units),
+                          na.action = na.method(x = "omit", y = "omit"),
+                          data = sparrow.sub, workspace = "8gb")
+
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff_gene, SexF, Total_Coverage, Total_Coverage2, Mother, par_age, off_hatchisland, par_hatchisland) %>% filter(SexF == "Female")
+model.basic.F.all <- asreml(fixed = intra_shuff_gene ~ 1 + Total_Coverage + Total_Coverage2 + par_age,
+                            random = ~ vm(parent, grminv) + ide(parent) + vm(Mother, grminv) + ide(Mother)+ par_hatchisland + off_hatchisland,
+                            residual= ~ idv(units),
+                            na.action = na.method(x = "omit", y = "omit"),
+                            data = sparrow.sub, workspace = "8gb")
+
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff_gene, SexF, Total_Coverage, Total_Coverage2, Mother, par_age, off_hatchisland, par_hatchisland) %>% filter(SexF == "Male")
+model.basic.M.all <- asreml(fixed = intra_shuff_gene ~ 1 + Total_Coverage + Total_Coverage2 + par_age,
+                            random = ~ vm(parent, grminv) + ide(parent) + vm(Mother, grminv) + ide(Mother) + par_hatchisland + off_hatchisland,
+                            residual= ~ idv(units),
+                            na.action = na.method(x = "omit", y = "omit"),
+                            data = sparrow.sub, workspace = "8gb")
+
+# Expansion of previous structure with: Paternal Random Effects
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff_gene, SexF, Total_Coverage, Total_Coverage2, Father)
+model.basic.Pat <- asreml(fixed = intra_shuff_gene ~ 1 + SexF + Total_Coverage + Total_Coverage2,
+                          random = ~ vm(parent, grminv) + ide(parent) + vm(Father, grminv) + ide(Father),
+                          residual= ~ idv(units),
+                          na.action = na.method(x = "omit", y = "omit"),
+                          data = sparrow.sub, workspace = "8gb")
+
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff_gene, SexF, Total_Coverage, Total_Coverage2, Father) %>% filter(SexF == "Male")
+model.basic.M.Pat <- asreml(fixed = intra_shuff_gene ~ 1 + Total_Coverage + Total_Coverage2,
+                            random = ~ vm(parent, grminv) + ide(parent) + vm(Father, grminv) + ide(Father),
+                            residual= ~ idv(units),
+                            na.action = na.method(x = "omit", y = "omit"),
+                            data = sparrow.sub, workspace = "8gb")
+
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff_gene, SexF, Total_Coverage, Total_Coverage2, Father) %>% filter(SexF == "Female")
+model.basic.F.Pat <- asreml(fixed = intra_shuff_gene ~ 1 + Total_Coverage + Total_Coverage2,
+                            random = ~ vm(parent, grminv) + ide(parent) + vm(Father, grminv) + ide(Father),
+                            residual= ~ idv(units),
+                            na.action = na.method(x = "omit", y = "omit"),
+                            data = sparrow.sub, workspace = "8gb")
+
+save(model.basic
+     ,model.basic.F
+     ,model.basic.M
+     ,model.basic.Mat
+     ,model.basic.F.Mat
+     ,model.basic.M.Mat
+     ,model.basic.all
+     ,model.basic.F.all
+     ,model.basic.M.all
+     ,model.basic.Pat
+     ,model.basic.F.Pat
+     ,model.basic.M.Pat, file = "results/intra_shuff_gene_models.RData")
+
+rm(model.basic)
+rm(model.basic.F)
+rm(model.basic.M)
+rm(model.basic.Mat)
+rm(model.basic.F.Mat)
+rm(model.basic.M.Mat)
+rm(model.basic.all)
+rm(model.basic.F.all)
+rm(model.basic.M.all)
+rm(model.basic.Pat)
+rm(model.basic.F.Pat)
+rm(model.basic.M.Pat)
+
+#Intra_Shuffling
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff, SexF, Total_Coverage, Total_Coverage2)
+model.basic <- asreml(fixed = intra_shuff ~ 1 + SexF + Total_Coverage + Total_Coverage2,
+                      random = ~ vm(parent, grminv) + ide(parent),
+                      residual= ~ idv(units),
+                      na.action = na.method(x = "omit", y = "omit"),
+                      data = sparrow.sub, workspace = "8gb")
+
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff, SexF, Total_Coverage, Total_Coverage2) %>% filter(SexF == "Male")
+model.basic.M <- asreml(fixed = intra_shuff ~ 1 + Total_Coverage + Total_Coverage2,
+                        random = ~ vm(parent, grminv) + ide(parent),
+                        residual= ~ idv(units),
+                        na.action = na.method(x = "omit", y = "omit"),
+                        data = sparrow.sub, workspace = "8gb")
+
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff, SexF, Total_Coverage, Total_Coverage2) %>% filter(SexF == "Female")
+model.basic.F <- asreml(fixed = intra_shuff ~ 1 + Total_Coverage + Total_Coverage2,
+                        random = ~ vm(parent, grminv) + ide(parent),
+                        residual= ~ idv(units),
+                        na.action = na.method(x = "omit", y = "omit"),
+                        data = sparrow.sub, workspace = "8gb")
+
+
+
+
+# Expansion of previous structure with: Maternal Random Effects
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff, SexF, Total_Coverage, Total_Coverage2, Mother)
+model.basic.Mat <- asreml(fixed = intra_shuff ~ 1 + SexF + Total_Coverage + Total_Coverage2,
+                          random = ~ vm(parent, grminv) + ide(parent) + vm(Mother, grminv) + ide(Mother),
+                          residual= ~ idv(units),
+                          na.action = na.method(x = "omit", y = "omit"),
+                          data = sparrow.sub, workspace = "8gb")
+
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff, SexF, Total_Coverage, Total_Coverage2, Mother) %>% filter(SexF == "Female")
+model.basic.F.Mat <- asreml(fixed = intra_shuff ~ 1 + Total_Coverage + Total_Coverage2,
+                            random = ~ vm(parent, grminv) + ide(parent) + vm(Mother, grminv) + ide(Mother),
+                            residual= ~ idv(units),
+                            na.action = na.method(x = "omit", y = "omit"),
+                            data = sparrow.sub, workspace = "8gb")
+
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff, SexF, Total_Coverage, Total_Coverage2, Mother) %>% filter(SexF == "Male")
+model.basic.M.Mat <- asreml(fixed = intra_shuff ~ 1 + Total_Coverage + Total_Coverage2,
+                            random = ~ vm(parent, grminv) + ide(parent) + vm(Mother, grminv) + ide(Mother),
+                            residual= ~ idv(units),
+                            na.action = na.method(x = "omit", y = "omit"),
+                            data = sparrow.sub, workspace = "8gb")
+
+
+
+# Expansion of previous structure with: Maternal Random Effects
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff, SexF, Total_Coverage, Total_Coverage2, Mother, par_age, off_hatchisland, par_hatchisland)
+model.basic.all <- asreml(fixed = intra_shuff ~ 1 + SexF + Total_Coverage + Total_Coverage2 +par_age,
+                          random = ~ vm(parent, grminv) + ide(parent) + vm(Mother, grminv) + ide(Mother)+ par_hatchisland + off_hatchisland,
+                          residual= ~ idv(units),
+                          na.action = na.method(x = "omit", y = "omit"),
+                          data = sparrow.sub, workspace = "8gb")
+
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff, SexF, Total_Coverage, Total_Coverage2, Mother, par_age, off_hatchisland, par_hatchisland) %>% filter(SexF == "Female")
+model.basic.F.all <- asreml(fixed = intra_shuff ~ 1 + Total_Coverage + Total_Coverage2 + par_age,
+                            random = ~ vm(parent, grminv) + ide(parent) + vm(Mother, grminv) + ide(Mother)+ par_hatchisland + off_hatchisland,
+                            residual= ~ idv(units),
+                            na.action = na.method(x = "omit", y = "omit"),
+                            data = sparrow.sub, workspace = "8gb")
+
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff, SexF, Total_Coverage, Total_Coverage2, Mother, par_age, off_hatchisland, par_hatchisland) %>% filter(SexF == "Male")
+model.basic.M.all <- asreml(fixed = intra_shuff ~ 1 + Total_Coverage + Total_Coverage2 + par_age,
+                            random = ~ vm(parent, grminv) + ide(parent) + vm(Mother, grminv) + ide(Mother) + par_hatchisland + off_hatchisland,
+                            residual= ~ idv(units),
+                            na.action = na.method(x = "omit", y = "omit"),
+                            data = sparrow.sub, workspace = "8gb")
+
+# Expansion of previous structure with: Paternal Random Effects
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff, SexF, Total_Coverage, Total_Coverage2, Father)
+model.basic.Pat <- asreml(fixed = intra_shuff ~ 1 + SexF + Total_Coverage + Total_Coverage2,
+                          random = ~ vm(parent, grminv) + ide(parent) + vm(Father, grminv) + ide(Father),
+                          residual= ~ idv(units),
+                          na.action = na.method(x = "omit", y = "omit"),
+                          data = sparrow.sub, workspace = "8gb")
+
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff, SexF, Total_Coverage, Total_Coverage2, Father) %>% filter(SexF == "Male")
+model.basic.M.Pat <- asreml(fixed = intra_shuff ~ 1 + Total_Coverage + Total_Coverage2,
+                            random = ~ vm(parent, grminv) + ide(parent) + vm(Father, grminv) + ide(Father),
+                            residual= ~ idv(units),
+                            na.action = na.method(x = "omit", y = "omit"),
+                            data = sparrow.sub, workspace = "8gb")
+
+sparrow.sub <- sparrow %>% dplyr::select(parent, intra_shuff, SexF, Total_Coverage, Total_Coverage2, Father) %>% filter(SexF == "Female")
+model.basic.F.Pat <- asreml(fixed = intra_shuff ~ 1 + Total_Coverage + Total_Coverage2,
+                            random = ~ vm(parent, grminv) + ide(parent) + vm(Father, grminv) + ide(Father),
+                            residual= ~ idv(units),
+                            na.action = na.method(x = "omit", y = "omit"),
+                            data = sparrow.sub, workspace = "8gb")
+
+save(model.basic
+     ,model.basic.F
+     ,model.basic.M
+     ,model.basic.Mat
+     ,model.basic.F.Mat
+     ,model.basic.M.Mat
+     ,model.basic.all
+     ,model.basic.F.all
+     ,model.basic.M.all
+     ,model.basic.Pat
+     ,model.basic.F.Pat
+     ,model.basic.M.Pat, file = "results/intra_shuff_models.RData")
+
+
+
+# load("results/intra_shuff_models.RData")
+# asreml4pin(model.basic)
+# asreml4pin(model.basic.F)
+# asreml4pin(model.basic.M)
+# asreml4pin(model.basic.Mat)
+# asreml4pin(model.basic.F.Mat)
+# asreml4pin(model.basic.M.Mat)
+# asreml4pin(model.basic.all)
+# asreml4pin(model.basic.F.all)
+# asreml4pin(model.basic.M.all)
+# asreml4pin(model.basic.Pat)
+# asreml4pin(model.basic.F.Pat)
+# asreml4pin(model.basic.M.Pat)
+
+
+#________________________________________________________________________________
+# Fit alternative GRM 
+#________________________________________________________________________________
