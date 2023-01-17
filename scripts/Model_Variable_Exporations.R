@@ -16,6 +16,7 @@ load("results/COQCed_models.RData")
 
 wald.asreml(model.basic)
 summary.asreml(model.basic, coef = T)$coef.fixed # Fixed effects
+model.basic$coefficients$fixed
 summary.asreml(model.basic, coef = T)$varcomp    # random effects
 asreml4pin(model.basic)
 
@@ -51,3 +52,32 @@ create_model_table(model.basic.M.Pat,"Shuff","Paternal_Male")
 create_model_table(model.basic.all,"Shuff","FullModel_AllSpar")
 create_model_table(model.basic.F.all,"Shuff","FullModel_Female")
 create_model_table(model.basic.M.all,"Shuff","FullModel_Male")
+
+## Wald Tests for Fixed Effects
+# For the sake of space I only list one example for how to run the wald test
+# # below
+# wald.asreml: Pseudo analysis of variance using incremental Wald statistics or conditional F-tests.
+#     dedDF: Compute approximate denominator degrees of freedom: can be “none” (the default) to suppress the computations,“numeric” for numerical methods
+#     ssType:“incremental” for incremental sum of squares (the default), or “conditional” for F-tests that respect both structural and intrinsic marginality
+wald.asreml(model.basic) # using defaults
+wald.asreml(model.basic, denDF="numeric",ssType="conditional") #computing approx denominator df and F-tests
+
+load("results/wald_list.RData") #obj containing all wald.asreml with denDF & ssType non-default
+
+product <- list()
+for(i in wald.list){
+  x <- i$Wald
+  x$Model <- names(wald.list)[length(product)+1]
+  x$Variable <- row.names(x)
+  product[[length(product)+1]] <- x
+}
+product <- do.call(rbind, product)
+
+product.ran <- list()
+for(i in wald.list){
+  x <- as.data.frame(i$stratumVariances)
+  x$Model <- names(wald.list)[length(product.ran)+1]
+  x$Variable <- row.names(x)
+  product.ran[[length(product.ran)+1]] <- x
+}
+product.ran <- do.call(rbind, product.ran)

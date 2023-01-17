@@ -92,6 +92,8 @@ hist(qc0id$CallPP, breaks = 50)
 qc1 <- check.marker(sparrowgen, callrate = 0.9, perid.call = 0.8, p.level = 0)
 data1 <- sparrowgen[qc1$idok, qc1$snpok]
 # save(data1, file = "data/data1.RData")
+#qc2 <- check.marker(data1, callrate = 0.9, perid.call = 0.8)
+
 rm(sparrowgen)
 rm(qc1)
 rm(qc0id)
@@ -216,3 +218,57 @@ plot_rGLSadj_results(gwasACCres2) +
 
 save(gwasACCres2, file = "results/GWAS/CO_count_QCed/Male-GWAS-lambda-corrected.RData")
 save(gwasACC2, file = "results/GWAS/CO_count_QCed/Male-GWAS.RData")
+
+
+#
+# Plots
+library(ggplot2)
+library(dplyr)
+load("C:/Users/johnb/Projects/Hert_Manuscript-git/results/GWAS/Files/AS_IS_GENE-basic_GWAS-lambda-corrected.RData")
+
+
+load("C:/Users/johnb/Dropbox/McAuley PhD - Data/20220720_Yapp_Sanity_Check/results/GWAS/QCed/All-sparrow-GWAS-lambda-corrected.RData")
+p1 <- plot_rGLSadj_results(gwasACCres2) +
+  theme(axis.text = element_text(size = 24), 
+        axis.title = element_text(size = 24,face = "bold"), 
+        plot.title = element_text(size = 28),
+        #plot.margin = margin(20, 50, 20, 50),
+        legend.text=element_text(size=24),
+        legend.title=element_blank(),
+        axis.text.x = element_blank()) +
+        labs(x = "", y = "-log10 P") +
+        ggtitle("A") +
+        scale_colour_grey()
+load("C:/Users/johnb/Dropbox/McAuley PhD - Data/20220720_Yapp_Sanity_Check/results/GWAS/QCed/Female-GWAS-lambda-corrected.RData")
+p2 <- plot_rGLSadj_results(gwasACCres2) +
+  theme(axis.text = element_text(size = 24), 
+        axis.title = element_text(size = 24,face = "bold"), 
+        plot.title = element_text(size = 28),
+        #plot.margin = margin(20, 50, 20, 50),
+        legend.text=element_text(size=24),
+        legend.title=element_blank(),
+        axis.text.x = element_blank()) +
+  labs(x = "", y = "-log10 P") +
+  ggtitle("B") +
+  scale_colour_grey()
+load("C:/Users/johnb/Dropbox/McAuley PhD - Data/20220720_Yapp_Sanity_Check/results/GWAS/QCed/Male-GWAS-lambda-corrected.RData")
+p3 <- plot_rGLSadj_results(gwasACCres2) +
+  theme(axis.text = element_text(size = 24), 
+        axis.title = element_text(size = 24,face = "bold"), 
+        plot.title = element_text(size = 28),
+        #plot.margin = margin(20, 50, 20, 50),
+        legend.text=element_text(size=24),
+        legend.title=element_blank(),
+        axis.text.x = element_blank()) +
+  labs(x = "Chromosome", y = "-log10 P") +
+  ggtitle("C") +
+  scale_colour_grey()
+# p3
+
+
+library(grid)
+grid.newpage()
+grid.draw(rbind(ggplotGrob(p1), 
+                ggplotGrob(p2),
+                ggplotGrob(p3), 
+                size = "last"))
