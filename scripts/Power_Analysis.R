@@ -15,8 +15,6 @@ library(reshape2)
 library(cowplot)
 library(glue)
 library(dplyr)
-# source("C:/Users/johnb/Dropbox/McAuley PhD - Data/Scripts/Model/ASReml4.EstEffects.R")
-source("C:/Users/johnb/Dropbox/McAuley PhD - Data/Scripts/Model/makeGRM.R")
 
 
 n0<-function(lambda=1,eigvalues=d){
@@ -77,32 +75,48 @@ sample<-function(h2=0.05,lambda=1,rho=0.5,power=0.85,m=1e5,alpha=0.05){
 #  0. Load in Data & Setup variables
 # ___________________________________________________________________________
 
-# ___________________________________________________________________________
-#  1. Setup eigenvalues
-# ___________________________________________________________________________
+# Make a kinship matrix
+
+kk = read.csv(file = "data/GWAS/Kinship/kinship.csv", header = TRUE)
+kk <- as.matrix(kk[,-1])
+qq <- eigen(kk, symmetric = T)
+d <- qq$values
+u <- qq$vectors
+write.csv(x = data.frame(d), "data/GWAS/Kinship/eigenvales.csv", row.names = F)
+eigenvalues <- read.csv("data/GWAS/Kinship/eigenvales.csv", header = T)
+d <- eigenvalues$d
 
 # ___________________________________________________________________________
-#  2. Perform Calculations
+#  1. Perform Calculations
 # ___________________________________________________________________________
 
-my.n = #sample size of ind.
-  my.m = #sample size of markers
-  
-  # Calculations effective sample sizze from eigenvalues of the kinship matrix
-  # Assuming lambda = 1
-  my.n0 = n0(lambda=1,eigvalues=d)
+my.n = 970    # sample size of ind.THIS VALUE DOES NOT ACCOUNT FOR LD btw neighboring markers
+              # Need to estimate LD on dataset
+my.m = 177909 # sample size of markers, autosomal markers from 180k snps
+my.h2 = 0.05  # h2 of QTL
+l = .1
+# Calculations effective sample size from eigenvalues of the kinship matrix
+# Assuming lambda = 1
 
-#effective correlation coefficient btw ind. in sample
-rho(n=210,lambda=1,n0= my.n0)
+n0(lambda=l,eigvalues=d)
+my.n0 = n0(lambda=l,eigvalues=d)
+# 1193.379
 
+# effective correlation coefficient btw ind. in sample
+rho(n=my.n,lambda=l,n0= my.n0)
+my.rho <- rho(n=my.n,lambda=l,n0= my.n0)
+# 0.376
 
-power(n=210,h2=0.05,lambda=1,rho=,m=,alpha=0.05)
+#Power of sample n to detect QTL of h2 using m markers under rho
+power(n = my.n*.5, h2= .05,lambda=l, rho = my.rho, m = my.m, alpha=0.05)
 
+my.pwr <- power(n = my.n, h2= my.h2 ,lambda=l, rho = my.rho, m = my.m, alpha=0.05)
 
-heritability1(n0=338.525,m=1619,lambda=1,power=0.85,alpha=0.05)
+# Detectible h2 using effective sample size (n0)
+heritability1(n0=my.n0,m=my.m,lambda=l,power=0.85, alpha=0.05)
 
+# Detectible h2 using effective correlation (rho)
+heritability2(n=my.n, rho=my.rho, m=my.m, lambda=l, power=0.85, alpha=0.05)
 
-heritability2(n=210,rho=0.7651,m=1619,lambda=1,power=0.85,alpha=0.05)
-
-
-sample(h2=0.05,rho=0.7651,m=1619,lambda=1,power=0.85,alpha=0.05)
+# minimum sample size required from this sample to detect a QTL with given h2 and power
+sample(h2=my.h2, rho=my.rho, m=my.m, lambda=l, power=0.85, alpha=0.05)
